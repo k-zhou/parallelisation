@@ -9,7 +9,7 @@ from random          import random, randrange, choice
 import numpy             as np
 
 ### This is an experiment in preparation for converting another
-### project to use paralellisation
+### project to use parallelisation
 
 DIMENSIONS          = 2
 FALLBACK_CORE_COUNT = 2
