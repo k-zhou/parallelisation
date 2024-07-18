@@ -19,27 +19,38 @@ class RandomWalkIterInput(Structure):
     _fields_ = [("coordinates", c_int * DIMENSIONS)]
 
 class RandomWalkIterResult(Structure):
-    _fields_ = [("success", c_bool), ("coordinates", c_int * DIMENSIONS)]
+    _fields_ = [("success", c_bool)]
 
-class RandomWalkIterResult_d(Structure):
-    _fields_ = [("success", c_bool), ("dimension", c_int), ("target", c_int)]
 class random_walk_v2():
 
+    def init_helper(self) -> None:
+        pass
+
     def __init__(self) -> None:
+
         self.cores          = cpu_count()
         if self.cores == None: self.cores = FALLBACK_CORE_COUNT
         print(f"{self.cores} CPU core(s)\n" + \
             "--------------")
         self.location       = mp.Manager().dict([(i, 0) for i in range(DIMENSIONS)])
         self.inputs  = self.location
-        self.outputs = mp.sharedctypes.Array(RandomWalkIterResult_d, \
-        [RandomWalkIterResult_d((False, 0, 0)) for i in range(self.cores)], lock=False)
+        self.outputs = 0 # immediately redefined in init_helper
+        self.init_helper()
+        
+        for i in self.outputs:
+            print(i._fields_)
         print("outputs: ", self.outputs)
         
         print(f"location {self.location}")
-        self.workers_d      = [mp.Process(target=self.worker_d, args=[i]) for i in range(self.cores)]
+        self.workers      = [mp.Process(target=self.worker, args=[i]) for i in range(self.cores)]
+    
+    def init_helper(self) -> None:
+        class ExtendedResult(RandomWalkIterResult):
+            _fields_ = [("dimension", c_int), ("target", c_int)]
+        self.outputs = mp.sharedctypes.Array(ExtendedResult, \
+        [ExtendedResult(False, 0, 0) for i in range(self.cores)], lock=False)
 
-    def worker_d(self, i=0) -> None:
+    def worker(self, i=0) -> None:
         acceptance = random() < 0.05
         if acceptance:
             dim                      = randrange(start=0, stop=DIMENSIONS)
@@ -61,7 +72,7 @@ class random_walk_v2():
         k              = 0 # all iterations
         while i < ROUNDS_OF_ITERATION:
             for j in range(self.cores):
-                self.workers_d[j].run()
+                self.workers[j].run()
             for j in range(self.cores):
                 r = self.outputs[j]
                 if r.success:
@@ -78,5 +89,5 @@ class random_walk_v2():
             k += 1
         print("----- Closing processes. -----")            
         for j in range(self.cores):
-            self.workers_d[j].close()
+            self.workers[j].close()
         print(f"--------- This SHOULD be the end. ---------")
