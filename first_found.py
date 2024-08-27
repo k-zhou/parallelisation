@@ -1,7 +1,6 @@
 from os              import cpu_count
 from multiprocessing.sharedctypes import Value, Array
 import multiprocessing   as mp
-import multiprocessing.sharedctypes
 from ctypes          import Structure, c_bool, c_int, c_float
 from random          import random, randrange, choice
 from time            import sleep
