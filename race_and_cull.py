@@ -18,7 +18,8 @@ class race_and_cull():
     def run(self):    pass
 
     def __init__(self) -> None:
-        self.goal      = 100
+        self.goal      = 200
+        self.max_incr  = 8
         self.mn        = mp.Manager()
         self.pass_data = self.mn.dict()
         self.stop_flag = mp.sharedctypes.Value(c_int, -1)
@@ -30,8 +31,11 @@ class race_and_cull():
         total = 0
         print(f"Worker #{index} starting.")
         while(total < self.goal):
-            sleep(rnd.random() * 0.5)
-            total += rnd.randint(1,4)
+            if not self.stop_flag.value == -1: 
+                print(f"Forcibly stopping {index:3}")
+                return
+            sleep(rnd.random() * 0.25)
+            total += rnd.randint(1, self.max_incr)
         if self.stop_flag.value == -1:
             print(f"Should modify {self.stop_flag.value}, ", end='')
             self.stop_flag.value = index # remember to specify you're editing the .value and not the wrapper itself
@@ -56,8 +60,9 @@ class race_and_cull():
             pass
         print("Continuing...")
         workers[self.stop_flag.value].join()
+        #sleep(1)
         for i in range(cores):
-            workers[i].terminate() # reminder: Do not use with Pipes and Queues
+            workers[i].join() # reminder: Do not use terminate() with Pipes and Queues
             print(workers[i], workers[i].is_alive())
         sleep(1)
         print()
